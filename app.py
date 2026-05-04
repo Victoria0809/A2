@@ -3,7 +3,92 @@ import streamlit.components.v1 as components
 import os
 import sys
 import time
+import platform
+import subprocess
 import pandas as pd
+
+
+# ====== 强大的环境修复函数 ======
+def fix_environment():
+    """强大的环境修复函数，专门处理Streamlit Cloud部署问题"""
+    print("🔧 开始环境修复...")
+    
+    # 1. 设置环境变量（避免编译问题）
+    if platform.system() == 'Linux':
+        os.environ['PKG_CONFIG_PATH'] = '/usr/lib/pkgconfig:/usr/local/lib/pkgconfig'
+        os.environ['CFLAGS'] = '-I/usr/include/freetype2 -I/usr/include/libpng16'
+        os.environ['LDFLAGS'] = '-L/usr/lib/x86_64-linux-gnu'
+        print("✅ 设置Linux环境变量")
+    
+    # 2. 检查并修复Pillow
+    try:
+        import PIL
+        from PIL import Image
+        print(f"✅ Pillow已安装，版本: {PIL.__version__}")
+    except ImportError:
+        print("❌ Pillow未安装，尝试修复...")
+        try:
+            # 使用--only-binary选项避免编译
+            subprocess.check_call([
+                sys.executable, '-m', 'pip', 'install',
+                '--only-binary=:all:', 'pillow==10.3.0'
+            ])
+            print("✅ Pillow安装成功")
+        except Exception as e:
+            print(f"⚠️  Pillow安装失败: {str(e)}")
+            print("💡 尝试备用安装方法...")
+            try:
+                subprocess.check_call([
+                    sys.executable, '-m', 'pip', 'install',
+                    '--upgrade', '--force-reinstall', 'pillow==10.3.0'
+                ])
+                print("✅ 备用方法安装Pillow成功")
+            except Exception as e2:
+                print(f"❌ 备用方法也失败: {str(e2)}")
+    
+    # 3. NLTK数据路径修复
+    try:
+        import nltk
+        nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
+        os.makedirs(nltk_data_dir, exist_ok=True)
+        nltk.data.path = [nltk_data_dir] + nltk.data.path
+        
+        # 自动下载NLTK数据
+        required_resources = ['punkt', 'averaged_perceptron_tagger']
+        for resource in required_resources:
+            try:
+                nltk.data.find(f'tokenizers/{resource}' if resource == 'punkt' else f'taggers/{resource}')
+                print(f"✓ {resource} 已存在")
+            except LookupError:
+                print(f"⬇️ 下载 {resource}...")
+                nltk.download(resource, download_dir=nltk_data_dir, quiet=True)
+    except Exception as e:
+        print(f"⚠️  NLTK设置失败: {str(e)}")
+    
+    # 4. Spacy模型自动下载（可选，避免卡住）
+    try:
+        import spacy
+        print("🔍 检查spacy模型...")
+        
+        # 检查中文模型（仅检查，不强制下载）
+        try:
+            spacy.load("zh_core_web_sm")
+            print("✅ 中文spacy模型已存在")
+        except OSError:
+            print("ℹ️ 中文spacy模型不存在，将使用离线模式")
+        
+        # 检查英文模型（仅检查，不强制下载）
+        try:
+            spacy.load("en_core_web_sm")
+            print("✅ 英文spacy模型已存在")
+        except OSError:
+            print("ℹ️ 英文spacy模型不存在，将使用离线模式")
+            
+    except Exception as e:
+        print(f"⚠️  Spacy模型检查失败: {str(e)}")
+    
+    print("✅ 环境修复完成")
+
 
 # ====== 设置 NLTK 数据目录 ======
 nltk_data_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
@@ -289,5 +374,6 @@ def main():
 
 
 if __name__ == "__main__":
+    fix_environment()
     ensure_nltk_punkt()
     main()
