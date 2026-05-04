@@ -1,0 +1,7 @@
+# 确保不忽略nltk_data目录
+!nltk_data/
+
+# 但忽略大文件（可选）
+nltk_data/**/*
+!nltk_data/tokenizers/punkt
+!nltk_data/taggers/averaged_perceptron_tagger
