@@ -1,4 +1,3 @@
-# requirements.txt - 正确格式
 streamlit==1.38.0
 spacy==3.8.0
 nltk==3.8.1
