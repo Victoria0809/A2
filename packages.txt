@@ -1,0 +1,9 @@
+# packages.txt - 系统级依赖
+zlib1g-dev
+libjpeg-dev
+libpng-dev
+libfreetype6-dev
+libwebp-dev
+libopenjp2-7-dev
+libtiff5-dev
+libraqm-dev
